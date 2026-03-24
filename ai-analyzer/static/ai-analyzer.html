@@ -26,13 +26,122 @@
         background: hsl(210, 20%, 98%);
         color: hsl(222, 47%, 11%);
         min-height: 100vh;
-        padding: 2rem 1rem;
+        padding: 0;
       }
+
+      /* ── Site Navigation ────────────────────────────────────────────────── */
+      .site-nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        border-bottom: 1px solid hsl(214, 32%, 91%);
+        background: hsla(210, 20%, 98%, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .site-nav-inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        height: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .site-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+      }
+      .site-logo-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.5rem;
+        background: hsl(222, 47%, 11%);
+        color: hsl(210, 40%, 98%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .site-logo-text {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: hsl(222, 47%, 11%);
+      }
+      .site-logo-text .logo-light {
+        font-weight: 300;
+        color: hsl(215, 16%, 47%);
+      }
+      .site-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .site-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: hsl(222, 47%, 11%);
+        text-decoration: none;
+        background: transparent;
+        transition: background 0.15s;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .site-nav-btn:hover {
+        background: hsl(210, 40%, 96%);
+      }
+      .site-nav-btn svg {
+        flex-shrink: 0;
+      }
+
+      /* ── Platform Status Bar ─────────────────────────────────────────────── */
+      .site-status-bar {
+        background: hsla(210, 40%, 96%, 0.5);
+        border-bottom: 1px solid hsl(214, 32%, 91%);
+        padding: 0.75rem 1.5rem;
+      }
+      .site-status-inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        font-size: 0.875rem;
+      }
+      @media (max-width: 640px) {
+        .site-status-inner { grid-template-columns: repeat(2, 1fr); }
+      }
+      .site-status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-dot-green  { background: #22c55e; }
+      .status-dot-blue   { background: #3b82f6; }
+      .status-dot-yellow { background: #eab308; }
+      .status-dot-red    { background: #ef4444; }
 
       /* ── Layout ─────────────────────────────────────────────────────────── */
       .container {
         max-width: 1100px;
         margin: 0 auto;
+        padding: 2rem 1rem;
       }
       .grid {
         display: grid;
@@ -518,6 +627,71 @@
     </style>
   </head>
   <body>
+    <!-- ── Site Navigation ──────────────────────────────────────────────────── -->
+    <nav class="site-nav">
+      <div class="site-nav-inner">
+        <a href="/" class="site-logo">
+          <div class="site-logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 17V9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17V5"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 17v-3"/>
+            </svg>
+          </div>
+          <span class="site-logo-text">AI<span class="logo-light">Governance</span></span>
+        </a>
+        <div class="site-nav-links">
+          <a href="/" class="site-nav-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 17V9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17V5"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 17v-3"/>
+            </svg>
+            Home
+          </a>
+          <a href="/marketplace" class="site-nav-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2 7h20"/>
+            </svg>
+            Marketplace
+          </a>
+          <a href="/results" class="site-nav-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            </svg>
+            Trust Passport
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ── Platform Status Bar ────────────────────────────────────────────── -->
+    <div class="site-status-bar">
+      <div class="site-status-inner">
+        <div class="site-status-item">
+          <div class="status-dot status-dot-green"></div>
+          <span>AI Systems Monitored</span>
+        </div>
+        <div class="site-status-item">
+          <div class="status-dot status-dot-blue"></div>
+          <span>Governance Checks Run</span>
+        </div>
+        <div class="site-status-item">
+          <div class="status-dot status-dot-yellow"></div>
+          <span>Average Trust Score</span>
+        </div>
+        <div class="site-status-item">
+          <div class="status-dot status-dot-red"></div>
+          <span>Active Alerts</span>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
       <!-- ── Header ──────────────────────────────────────────────────────────── -->
       <header>
