@@ -20,52 +20,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { resultsStorage } from "@/lib/resultsStorage";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
 import { GovernanceChecks } from "@/components/GovernanceChecks";
-import { resultsStore } from "@/lib/storage";
-import { identity } from "@/lib/identity/identity";
-import { tracker } from "@/lib/tracking/tracker";
-import { generateReport } from "@/lib/reports/generateReport";
-import { feedback } from "@/lib/feedback/feedback";
-import { useState } from "react";
 
 export default function Results() {
-  // Get all scan results from resultsStore
-  const scans = resultsStore.list();
+  // Get all stored results from multiple tools
+  const allStoredResults = resultsStorage.getAllResults();
   
-  console.log('📋 Trust Passport - Retrieved Scans:', {
-    totalScans: scans.length,
-    scans: scans.map(s => ({ tool: s.tool, timestamp: s.timestamp, scores: s.scores }))
-  });
-  
-  // Helper function to get latest scan by tool
-  const getLatestScan = (tool: string) =>
-    scans
-      .filter((s: any) => s.tool === tool)
-      .sort((a: any, b: any) => b.timestamp - a.timestamp)[0];
-  
-  // Get latest scans using helper
-  const fairnessScan = getLatestScan("model_fairness");
-  const datasetRiskScan = getLatestScan("dataset_risk");
-  
-  console.log('🎯 Trust Passport - Latest Scans:', {
-    fairnessScan: fairnessScan ? { tool: fairnessScan.tool, timestamp: fairnessScan.timestamp, scores: fairnessScan.scores } : null,
-    datasetRiskScan: datasetRiskScan ? { tool: datasetRiskScan.tool, timestamp: datasetRiskScan.timestamp, scores: datasetRiskScan.scores } : null
-  });
-  
-  // Email management
-  const [emailInput, setEmailInput] = useState("");
-  const userEmail = identity.getEmail();
-  const showEmailInput = !userEmail;
-  
-  // Feedback state
-  const [rating, setRating] = useState<number>(0);
-  const [comment, setComment] = useState<string>("");
-  const [showThankYou, setShowThankYou] = useState<boolean>(false);
-  
-  // Get latest scan for feedback association
-  const latestScan = [...(fairnessScan ? [fairnessScan] : []), ...(datasetRiskScan ? [datasetRiskScan] : [])]
-    .sort((a, b) => b.timestamp - a.timestamp)[0];
+  // Extract specific tool results
+  const modelFairnessResults = allStoredResults['Credit Score Bias Monitor'];
+  const datasetRiskResults = allStoredResults['dataset_risk_analyzer'];
   
   // Calculate overall trust score from available results
   let overallTrustScore = 0;
@@ -73,28 +38,15 @@ export default function Results() {
   let overallRiskColor = "text-red-600";
   let overallRiskBgColor = "bg-red-50";
   
-  if (fairnessScan && datasetRiskScan) {
-    // Both tools exist - average of scores
-    overallTrustScore = Math.round((fairnessScan.scores.overall + datasetRiskScan.scores.overall) / 2);
-    console.log('📊 Trust Passport - Score Calculation (Both Tools):', {
-      fairnessScore: fairnessScan.scores.overall,
-      datasetScore: datasetRiskScan.scores.overall,
-      overallTrustScore
-    });
-  } else if (fairnessScan) {
-    // Only fairness exists
-    overallTrustScore = fairnessScan.scores.overall;
-    console.log('📊 Trust Passport - Score Calculation (Fairness Only):', {
-      fairnessScore: fairnessScan.scores.overall,
-      overallTrustScore
-    });
-  } else if (datasetRiskScan) {
+  if (modelFairnessResults && datasetRiskResults) {
+    // Both tools exist - average the scores
+    overallTrustScore = Math.round((modelFairnessResults.score + datasetRiskResults.score) / 2);
+  } else if (modelFairnessResults) {
+    // Only model fairness exists
+    overallTrustScore = modelFairnessResults.score;
+  } else if (datasetRiskResults) {
     // Only dataset risk exists
-    overallTrustScore = datasetRiskScan.scores.overall;
-    console.log('📊 Trust Passport - Score Calculation (Dataset Only):', {
-      datasetScore: datasetRiskScan.scores.overall,
-      overallTrustScore
-    });
+    overallTrustScore = datasetRiskResults.score;
   }
   
   // Update risk category and colors based on calculated trust score
@@ -103,7 +55,7 @@ export default function Results() {
   overallRiskBgColor = overallTrustScore >= 80 ? "bg-green-50" : overallTrustScore >= 60 ? "bg-yellow-50" : "bg-red-50";
   
   // If no results exist, show message
-  if (scans.length === 0) {
+  if (!allStoredResults || Object.keys(allStoredResults).length === 0) {
     return (
       <>
         <WorkflowProgress currentStep="results" />
@@ -132,9 +84,9 @@ export default function Results() {
     );
   }
 
-  // Get fairness metrics from scan data
-  const fairnessMetrics = fairnessScan?.metadata?.details?.fairness_metrics || 
-                           fairnessScan?.metadata?.fairness_metrics || {};
+  // Get fairness metrics from details (for legacy compatibility)
+  const fairnessMetrics = (modelFairnessResults as any)?.details?.fairness_metrics || 
+                           (modelFairnessResults as any)?.fairness_metrics || {};
   
   // Generate insights based on fairness metrics
   const insights: string[] = [];
@@ -151,7 +103,7 @@ export default function Results() {
                            "High Risk – Mitigation Required";
 
   // Format timestamp
-  const analysisDate = new Date(fairnessScan?.timestamp || datasetRiskScan?.timestamp || Date.now()).toLocaleDateString('en-US', {
+  const analysisDate = new Date(modelFairnessResults?.timestamp || datasetRiskResults?.timestamp || Date.now()).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -159,7 +111,7 @@ export default function Results() {
 
   // Generate Audit ID
   const generateAuditId = () => {
-    const date = new Date(fairnessScan?.timestamp || datasetRiskScan?.timestamp || Date.now());
+    const date = new Date(modelFairnessResults?.timestamp || datasetRiskResults?.timestamp || Date.now());
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -180,33 +132,46 @@ export default function Results() {
   ];
 
   // Generate report data
-  const generateReportData = () => {
-    const scans = resultsStore.list();
-    const report = generateReport(scans);
+  const generateReport = () => {
+    const reportData = {
+      system_metadata: {
+        ai_system: (modelFairnessResults as any)?.details?.model_type || 
+                   (modelFairnessResults as any)?.model_type || 'Unknown',
+        industry: (modelFairnessResults as any)?.details?.industry || 
+                  (modelFairnessResults as any)?.industry || 'Unknown',
+        governance_tool: (modelFairnessResults as any)?.tool || 'Credit Score Bias Monitor',
+        analysis_timestamp: analysisDate
+      },
+      trust_score: {
+        overall_score: overallTrustScore,
+        risk_category: overallRiskCategory,
+        certification_status: certificationStatus
+      },
+      score_breakdown: {
+        fairness: (modelFairnessResults as any)?.score || 0,
+        dataset_governance: (datasetRiskResults as any)?.score || 0,
+        transparency: 72, // Placeholder
+        robustness: 78, // Placeholder
+        compliance: 91 // Placeholder
+      },
+      fairness_metrics: fairnessMetrics,
+      insights: insights,
+      recommended_actions: [
+        "Rebalance training dataset",
+        "Apply fairness constraints", 
+        "Monitor subgroup performance"
+      ]
+    };
     
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "aeris-trust-passport.json";
+    a.download = `ai-trust-passport-${auditId}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    // Track report download
-    tracker.track("report_downloaded", {
-      scan_count: scans.length
-    });
-  };
-
-  // Handle download with email check
-  const handleDownload = () => {
-    const email = identity.getEmail();
-    if (email) {
-      generateReportData();
-    }
-    // If no email, user will see the input field above
   };
 
   return (
@@ -215,21 +180,7 @@ export default function Results() {
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
-          <div className="text-center mb-8 relative">
-            {/* Download Button - Top Right */}
-            <div className="absolute top-0 right-0">
-              <Button 
-                onClick={handleDownload} 
-                size="sm" 
-                variant="outline"
-                className="gap-2"
-                disabled={!userEmail}
-                title={userEmail ? "Download Report" : "Enter email to download"}
-              >
-                <Download className="w-4 h-4" />
-              </Button>
-            </div>
-            
+          <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-lg bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8" />
             </div>
@@ -238,33 +189,6 @@ export default function Results() {
               Enterprise AI Governance Audit Report
             </p>
           </div>
-
-          {/* Email Input Section - Show if no email */}
-          {showEmailInput && (
-            <div className="mb-8">
-              <div className="flex gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="Enter email to receive report"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <Button 
-                  onClick={() => {
-                    identity.setEmail(emailInput);
-                    tracker.track("email_captured", {
-                      email: emailInput
-                    });
-                    generateReportData();
-                  }}
-                  disabled={!emailInput || !emailInput.includes('@')}
-                >
-                  Get Report
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Trust Summary & Governance Metrics - Full Width */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -344,11 +268,11 @@ export default function Results() {
                 <div className="space-y-4">
                   <div className="p-4 border rounded-lg">
                     <h3 className="font-semibold mb-2">Model Fairness Score</h3>
-                    <div className="text-2xl font-bold">{fairnessScan?.scores?.overall || '--'}</div>
+                    <div className="text-2xl font-bold">{modelFairnessResults?.score || '--'}</div>
                   </div>
                   <div className="p-4 border rounded-lg">
                     <h3 className="font-semibold mb-2">Dataset Risk Score</h3>
-                    <div className="text-2xl font-bold">{datasetRiskScan?.scores?.overall || '--'}</div>
+                    <div className="text-2xl font-bold">{datasetRiskResults?.score || '--'}</div>
                   </div>
                 </div>
               </CardContent>
@@ -476,8 +400,14 @@ export default function Results() {
             </CardContent>
           </Card>
 
-          
-          
+          {/* SECTION 8 — Generate Trust Report Button */}
+          <div className="text-center">
+            <Button onClick={generateReport} size="lg" className="gap-2 px-8">
+              <Download className="w-5 h-5" />
+              Generate Trust Report
+            </Button>
+          </div>
+
           {/* SECTION — Regulatory Alignment */}
           <Card className="mb-8">
             <CardHeader>
@@ -568,79 +498,6 @@ export default function Results() {
 
           {/* Governance Checks Panel */}
           <GovernanceChecks />
-          
-          {/* Feedback Section */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-xl">Was this analysis useful?</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!showThankYou ? (
-                <div className="space-y-4">
-                  {/* Rating Options */}
-                  <div className="flex gap-2 justify-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Button
-                        key={star}
-                        variant={rating === star ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setRating(star)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {star}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  {/* Comment Input */}
-                  <div className="space-y-2">
-                    <textarea
-                      placeholder="What could be improved?"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  {/* Submit Button */}
-                  <Button 
-                    onClick={() => {
-                      if (rating > 0) {
-                        let toolName = "trust_passport";
-                        if (fairnessScan) {
-                          toolName = "model_fairness";
-                        } else if (datasetRiskScan) {
-                          toolName = "dataset_risk";
-                        }
-                        
-                        feedback.submit({
-                          tool: toolName,
-                          rating,
-                          comment,
-                          scan_id: latestScan?.scan_id
-                        });
-                        tracker.track("feedback_submitted", {
-                          rating
-                        });
-                        setRating(0);
-                        setComment("");
-                        setShowThankYou(true);
-                      }
-                    }}
-                    disabled={rating === 0}
-                    className="w-full"
-                  >
-                    Submit
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-lg font-medium text-green-600">Thanks for your feedback</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </>

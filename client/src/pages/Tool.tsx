@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, FileSpreadsheet, Settings2, BarChart3, ChevronRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useDetectSensitive, useAnalyze } from "@/hooks/use-fairness";
@@ -13,9 +12,7 @@ import { FairnessDashboard } from "@/components/FairnessDashboard";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
 import { z } from "zod";
 import { analyzeResponseSchema } from "@shared/schema";
-import { resultsStore } from "@/lib/storage";
-import { buildScanResult } from "@/lib/results/buildScanResult";
-import { tracker } from "@/lib/tracking/tracker";
+import { resultsStorage } from "@/lib/resultsStorage";
 
 type AnalyzeResponse = z.infer<typeof analyzeResponseSchema>;
 
@@ -89,50 +86,18 @@ export default function Tool() {
           const fairnessScore = Math.round(100 - (statisticalParity + equalOpportunity + disparateImpact) / 3);
           const trustScore = Math.round((fairnessScore + 85 + 78 + 91) / 4); // Average with other metrics
           
-          console.log('🔍 Fairness Tool - Score Creation:', {
-            statisticalParity,
-            equalOpportunity,
-            disparateImpact,
-            fairnessScore,
-            trustScore
-          });
-          
-          const scanResult = buildScanResult({
-            tool: "model_fairness",
-            tool_label: "Model Fairness Analyzer",
-            scores: {
+          resultsStorage.save({
+            industry: "Fintech", // Default - could be stored from previous steps
+            model_type: "Classification Models", // Default - could be stored from previous steps
+            tool: "Credit Score Bias Monitor",
+            fairness_metrics: {
               statistical_parity: statisticalParity / 100,
               equal_opportunity: equalOpportunity / 100,
               disparate_impact: disparateImpact / 100,
-              accuracy: 0.87,
-              overall: fairnessScore
+              accuracy: 0.87, // Placeholder - could be calculated from data
             },
-            risks: [],
-            metadata: {
-              industry: "Fintech",
-              model_type: "Classification"
-            }
-          });
-
-          // Basic validation before saving
-          if (!scanResult || !scanResult.tool) return;
-
-          // Prevent duplicate saves within same second (basic guard)
-          const lastSaveTime = localStorage.getItem('lastFairnessSaveTime');
-          const currentTime = Date.now();
-          if (lastSaveTime && currentTime - parseInt(lastSaveTime) < 1000) return;
-          
-          // Save to resultsStore
-          resultsStore.save(scanResult);
-          
-          console.log('💾 Fairness Tool - ScanResult Saved:', scanResult);
-          
-          // Update last save time
-          localStorage.setItem('lastFairnessSaveTime', currentTime.toString());
-          
-          // Track scan completion
-          tracker.track("scan_run", {
-            tool: "model_fairness"
+            fairness_score: fairnessScore,
+            trust_score: trustScore,
           });
         },
       }
@@ -450,16 +415,6 @@ export default function Tool() {
                 className="w-full max-w-6xl mx-auto"
               >
                 <FairnessDashboard data={results} />
-                
-                {/* View Trust Passport Button */}
-                <div className="mt-8 flex justify-center">
-                  <Link href="/results">
-                    <Button className="px-8 py-3 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                      View Trust Passport
-                      <ChevronRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </Link>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>

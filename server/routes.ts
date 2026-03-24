@@ -3,7 +3,6 @@ import type { Server } from "http";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { api } from "@shared/routes";
-import feedbackRoutes from "./routes/feedback";
 
 // Setup multer for in-memory file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -180,9 +179,6 @@ export async function registerRoutes(
       res.status(400).json({ message: err.message || "Analysis failed" });
     }
   });
-
-  // Register feedback routes
-  app.use("/api", feedbackRoutes);
 
   return httpServer;
 }

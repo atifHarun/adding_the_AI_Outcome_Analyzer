@@ -6,9 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
 import { scanDataset, DatasetScanResponse } from "@/services/datasetRiskService";
-import { resultsStore } from "@/lib/storage";
-import { buildScanResult } from "@/lib/results/buildScanResult";
-import { tracker } from "@/lib/tracking/tracker";
+import { resultsStorage } from "@/lib/resultsStorage";
 import { isFeatureEnabled } from "@/config/featureFlags";
 
 export default function DatasetTool() {
@@ -46,45 +44,13 @@ export default function DatasetTool() {
       setScanResult(result);
       console.log('scanResult state set'); // Debug log
       
-      // Log dataset score creation
-      console.log('🔍 Dataset Tool - Score Creation:', {
-        score: result.score,
-        risk_level: result.risk_level,
-        governance_score: result.score // Using score as governance score
-      });
-      
-      // Create and save ScanResult object using buildScanResult
-      const scanResult = buildScanResult({
-        tool: "dataset_risk",
-        tool_label: "Dataset Risk Analyzer",
-        scores: {
-          overall: result.score
-        },
-        risks: result.signals || [],
-        metadata: {
-          columns: result.dataset_summary.columns,
-          row_count: result.dataset_summary.rows
-        }
-      });
-      
-      // Basic validation before saving
-      if (!scanResult || !scanResult.tool) return;
-      
-      // Prevent duplicate saves within same second (basic guard)
-      const lastSaveTime = localStorage.getItem('lastDatasetSaveTime');
-      const currentTime = Date.now();
-      if (lastSaveTime && currentTime - parseInt(lastSaveTime) < 1000) return;
-      
-      resultsStore.save(scanResult);
-      
-      console.log('💾 Dataset Tool - ScanResult Saved:', scanResult);
-      
-      // Update last save time
-      localStorage.setItem('lastDatasetSaveTime', currentTime.toString());
-      
-      // Track scan completion
-      tracker.track("scan_run", {
-        tool: "dataset_risk"
+      // Save results using the new envelope format
+      resultsStorage.save({
+        tool: "dataset_risk_analyzer",
+        category: "dataset_governance",
+        score: result.score, // Use "score" instead of "dataset_risk_score"
+        risk_level: result.risk_level || (result.score >= 80 ? "low" : result.score >= 60 ? "medium" : "high"),
+        details: result
       });
       
       setStep(3);
@@ -271,7 +237,7 @@ export default function DatasetTool() {
                     <div className="text-center mt-6">
                       <Button onClick={() => window.location.href = '/results'} className="gap-2">
                         <CheckCircle2 className="w-4 h-4" />
-                        View Trust Passport
+                        View Full Report
                       </Button>
                     </div>
                   </div>

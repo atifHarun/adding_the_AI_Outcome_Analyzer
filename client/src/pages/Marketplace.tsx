@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WorkflowProgress } from "@/components/WorkflowProgress";
-import { isFeatureEnabled, FEATURE_FLAGS } from "@/config/featureFlags";
+import { isFeatureEnabled } from "@/config/featureFlags";
 import { 
   Scale, 
   Eye, 
@@ -14,10 +14,50 @@ import {
   BarChart3,
   Zap,
   Users,
-  Lock
+  Lock,
+  Settings,
+  FileText,
+  Globe,
+  AlertTriangle
 } from "lucide-react";
 
 const tools = [
+  {
+    id: "system-usecase",
+    title: "System usecase",
+    description: "Configure your AI system profile usecase",
+    icon: Settings,
+    category: "AI System Profile",
+    route: "/ai-system",
+    featureFlag: "system_usecase" as const,
+  },
+  {
+    id: "operational-geography",
+    title: "Operational Geography",
+    description: "Configure your AI system profile operational geography",
+    icon: Globe,
+    category: "AI System Profile",
+    route: "/ai-system",
+    featureFlag: "operational_geography" as const,
+  },
+  {
+    id: "decision-outcomes",
+    title: "Decision Outcomes",
+    description: "Configure your AI system profile decision outcomes",
+    icon: FileText,
+    category: "AI System Profile",
+    route: "/ai-system",
+    featureFlag: "decision_outcomes" as const,
+  },
+  {
+    id: "risk-sensitivity",
+    title: "Risk Sensitivity",
+    description: "Configure your AI system profile risk sensitivity",
+    icon: AlertTriangle,
+    category: "AI System Profile",
+    route: "/ai-system",
+    featureFlag: "risk_sensitivity" as const,
+  },
   {
     id: "model-fairness-analyzer",
     title: "Model Fairness Analyser",
@@ -110,9 +150,10 @@ const tools = [
   },
 ];
 
-const categories = ["Bias & Fairness", "Transparency", "Data Governance", "Safety", "Compliance"];
+const categories = ["AI System Profile", "Bias & Fairness", "Transparency", "Data Governance", "Safety", "Compliance"];
 
 const categoryIcons = {
+  "AI System Profile": Settings,
   "Bias & Fairness": Scale,
   "Transparency": Eye,
   "Data Governance": FileCheck,
@@ -186,92 +227,6 @@ export default function Marketplace() {
               </div>
             );
           })}
-
-          {/* AI System Profile Section */}
-          <div className="mb-12">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <Brain className="w-4 h-4" />
-              </div>
-              <h2 className="text-2xl font-semibold text-foreground">AI System Profile</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  id: "classification",
-                  title: "Classification Models",
-                  description: "Binary and multi-class classification systems for decision-making",
-                  icon: BarChart3,
-                  featureFlag: "classification" as const,
-                },
-                {
-                  id: "regression", 
-                  title: "Regression Models",
-                  description: "Predictive models for continuous value estimation and forecasting",
-                  icon: Zap,
-                  featureFlag: "regression" as const,
-                },
-                {
-                  id: "clustering",
-                  title: "Clustering Models", 
-                  description: "Unsupervised learning for pattern discovery and segmentation",
-                  icon: Users,
-                  featureFlag: "clustering" as const,
-                },
-                {
-                  id: "anomaly_detection",
-                  title: "Anomaly Detection",
-                  description: "Outlier detection and unusual pattern identification systems",
-                  icon: Shield,
-                  featureFlag: "anomaly_detection" as const,
-                },
-                {
-                  id: "recommendation",
-                  title: "Recommendation Systems",
-                  description: "Personalized content and product recommendation engines",
-                  icon: Scale,
-                  featureFlag: "recommendation" as const,
-                },
-                {
-                  id: "generative",
-                  title: "Generative AI",
-                  description: "Content generation and creative AI systems",
-                  icon: Brain,
-                  featureFlag: "generative" as const,
-                },
-              ].map((modelType) => {
-                const ModelIcon = modelType.icon;
-                const isEnabled = FEATURE_FLAGS.modelTypes[modelType.featureFlag];
-                return (
-                  <Card key={modelType.id} className="h-full">
-                    <CardHeader>
-                      <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
-                        <ModelIcon className="w-6 h-6" />
-                      </div>
-                      <CardTitle className="text-lg">{modelType.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="mb-4">
-                        {modelType.description}
-                      </CardDescription>
-                      {isEnabled ? (
-                        <Button className="w-full gap-2">
-                          Select Model Type
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button className="w-full gap-2" variant="outline" disabled>
-                          <Lock className="w-4 h-4" />
-                          Available in full platform
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </>
