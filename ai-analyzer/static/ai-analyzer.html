@@ -8,6 +8,9 @@
       name="description"
       content="Analyze structured AI use cases for ethical, legal, and social impacts."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       /* ── Reset & base ───────────────────────────────────────────────────── */
       *,
@@ -19,10 +22,9 @@
       }
 
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #f8f9fb;
-        color: #1a1a2e;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: hsl(210, 20%, 98%);
+        color: hsl(222, 47%, 11%);
         min-height: 100vh;
         padding: 2rem 1rem;
       }
@@ -54,12 +56,15 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        color: #18181b;
+        color: hsl(222, 47%, 11%);
         margin-bottom: 0.75rem;
       }
       .header-icon svg {
         width: 2.5rem;
         height: 2.5rem;
+      }
+      h1, h2, h3, h4 {
+        font-family: 'Outfit', sans-serif;
       }
       h1 {
         font-size: 2.25rem;
@@ -69,11 +74,11 @@
       h2.subtitle {
         font-size: 1.25rem;
         font-style: italic;
-        color: #374151;
+        color: hsl(215, 25%, 35%);
         margin-bottom: 0.5rem;
       }
       .subtext {
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         font-size: 1rem;
         max-width: 640px;
         margin: 0 auto;
@@ -82,15 +87,15 @@
       /* ── Cards ──────────────────────────────────────────────────────────── */
       .card {
         background: #fff;
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(214, 32%, 91%);
         border-radius: 0.75rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
         overflow: hidden;
       }
       .card-header {
         padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
-        background: #fafafa;
+        border-bottom: 1px solid hsl(214, 32%, 91%);
+        background: hsl(210, 40%, 99%);
       }
       .card-header h3 {
         font-size: 1.1rem;
@@ -98,10 +103,11 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        font-family: 'Outfit', sans-serif;
       }
       .card-header p {
         font-size: 0.85rem;
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         margin-top: 0.25rem;
       }
       .card-body {
@@ -118,7 +124,7 @@
       textarea,
       input {
         width: 100%;
-        border: 1px solid #d1d5db;
+        border: 1px solid hsl(214, 32%, 91%);
         border-radius: 0.5rem;
         padding: 0.625rem 0.75rem;
         font-size: 0.9rem;
@@ -127,15 +133,16 @@
         outline: none;
         transition: border-color 0.15s;
         background: #fff;
-        color: #1a1a2e;
+        color: hsl(222, 47%, 11%);
+        font-family: 'Plus Jakarta Sans', sans-serif;
       }
       textarea:focus,
       input:focus {
-        border-color: #18181b;
-        box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.1);
+        border-color: hsl(222, 47%, 11%);
+        box-shadow: 0 0 0 3px hsla(222, 47%, 11%, 0.1);
       }
       textarea:disabled {
-        background: #f3f4f6;
+        background: hsl(210, 40%, 96%);
         cursor: not-allowed;
       }
       #description-input {
@@ -169,27 +176,27 @@
         cursor: not-allowed;
       }
       .btn-primary {
-        background: #18181b;
+        background: hsl(222, 47%, 11%);
         color: #fff;
       }
       .btn-primary:hover:not(:disabled) {
-        background: #27272a;
+        background: hsl(222, 47%, 17%);
       }
       .btn-outline {
         background: transparent;
-        color: #18181b;
-        border: 1.5px solid #18181b;
+        color: hsl(222, 47%, 11%);
+        border: 1.5px solid hsl(222, 47%, 11%);
       }
       .btn-outline:hover:not(:disabled) {
-        background: #f4f4f5;
+        background: hsl(210, 40%, 96%);
       }
       .btn-ghost {
         background: transparent;
-        color: #374151;
-        border: 1px solid #d1d5db;
+        color: hsl(215, 25%, 35%);
+        border: 1px solid hsl(214, 32%, 91%);
       }
       .btn-ghost:hover:not(:disabled) {
-        background: #f3f4f6;
+        background: hsl(210, 40%, 96%);
       }
       .btn-full {
         width: 100%;
@@ -204,8 +211,8 @@
 
       /* ── Section boxes ──────────────────────────────────────────────────── */
       .section-box {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
+        background: hsl(210, 40%, 96%);
+        border: 1px solid hsl(214, 32%, 91%);
         border-radius: 0.625rem;
         padding: 1rem;
         margin-bottom: 1.25rem;
@@ -222,8 +229,9 @@
         font-size: 1rem;
         font-weight: 700;
         padding-bottom: 0.4rem;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid hsl(214, 32%, 91%);
         margin-bottom: 0.75rem;
+        font-family: 'Outfit', sans-serif;
       }
       .bullet-row {
         display: flex;
@@ -235,19 +243,19 @@
         transition: background 0.12s;
       }
       .bullet-row:hover {
-        background: #f3f4f6;
+        background: hsl(210, 40%, 96%);
       }
       .bullet-row input[type="checkbox"] {
         width: 1rem;
         height: 1rem;
         margin-top: 0.2rem;
         flex-shrink: 0;
-        accent-color: #18181b;
+        accent-color: hsl(222, 47%, 11%);
         cursor: pointer;
       }
       .bullet-row span {
         font-size: 0.875rem;
-        color: #4b5563;
+        color: hsl(215, 16%, 47%);
         line-height: 1.55;
       }
 
@@ -270,7 +278,7 @@
       /* ── Loading card ───────────────────────────────────────────────────── */
       .loading-card {
         background: #fff;
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(214, 32%, 91%);
         border-radius: 0.75rem;
         padding: 3rem 1.5rem;
         text-align: center;
@@ -279,7 +287,7 @@
         width: 2.5rem;
         height: 2.5rem;
         border-width: 3px;
-        color: #18181b;
+        color: hsl(222, 47%, 11%);
         margin: 0 auto 1rem;
         display: block;
       }
@@ -288,7 +296,7 @@
         font-weight: 600;
       }
       .loading-card small {
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         font-size: 0.875rem;
         display: block;
         margin-top: 0.35rem;
@@ -297,7 +305,7 @@
       /* ── Empty state ────────────────────────────────────────────────────── */
       .empty-state {
         min-height: 460px;
-        border: 2px dashed #d1d5db;
+        border: 2px dashed hsl(214, 32%, 91%);
         border-radius: 0.75rem;
         display: flex;
         flex-direction: column;
@@ -309,7 +317,7 @@
       .empty-icon {
         width: 3.5rem;
         height: 3.5rem;
-        background: #f3f4f6;
+        background: hsl(210, 40%, 96%);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -317,7 +325,7 @@
         margin-bottom: 1rem;
       }
       .empty-icon svg {
-        color: #9ca3af;
+        color: hsl(215, 16%, 65%);
       }
       .empty-state h3 {
         font-size: 1.2rem;
@@ -325,7 +333,7 @@
         margin-bottom: 0.4rem;
       }
       .empty-state p {
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         max-width: 280px;
         font-size: 0.9rem;
       }
@@ -358,11 +366,11 @@
         max-height: 80vh;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       }
       .modal-header {
         padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid hsl(214, 32%, 91%);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -370,23 +378,24 @@
       .modal-header h3 {
         font-size: 1.1rem;
         font-weight: 700;
+        font-family: 'Outfit', sans-serif;
       }
       .modal-close {
         background: none;
         border: none;
         cursor: pointer;
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         font-size: 1.3rem;
         line-height: 1;
       }
       .modal-close:hover {
-        color: #111;
+        color: hsl(222, 47%, 11%);
       }
       .modal-body {
         flex: 1;
         overflow-y: auto;
         padding: 1.25rem 1.5rem;
-        background: #f9fafb;
+        background: hsl(210, 40%, 96%);
       }
       .modal-body pre {
         font-family: "Courier New", monospace;
@@ -396,7 +405,7 @@
       }
       .modal-footer {
         padding: 1rem 1.5rem;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid hsl(214, 32%, 91%);
         display: flex;
         justify-content: flex-end;
       }
@@ -406,12 +415,12 @@
         position: fixed;
         bottom: 1.5rem;
         right: 1.5rem;
-        background: #1a1a2e;
+        background: hsl(222, 47%, 11%);
         color: #fff;
         padding: 0.75rem 1.25rem;
         border-radius: 0.5rem;
         font-size: 0.875rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.25s;
@@ -419,7 +428,7 @@
         max-width: 320px;
       }
       #toast.error-toast {
-        background: #dc2626;
+        background: hsl(0, 84%, 60%);
       }
       #toast.show {
         opacity: 1;
@@ -429,14 +438,14 @@
       footer {
         margin-top: 3rem;
         padding-top: 2rem;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid hsl(214, 32%, 91%);
         text-align: center;
       }
       .footer-disclaimer {
         font-size: 0.875rem;
         font-style: italic;
-        color: #6b7280;
-        background: #f3f4f6;
+        color: hsl(215, 16%, 47%);
+        background: hsl(210, 40%, 96%);
         border-radius: 0.5rem;
         padding: 0.75rem 1.25rem;
         max-width: 640px;
@@ -444,7 +453,7 @@
       }
       .footer-version {
         font-size: 0.75rem;
-        color: #9ca3af;
+        color: hsl(215, 16%, 65%);
         font-family: monospace;
       }
 
@@ -459,14 +468,14 @@
       .mode-bar .mode-label {
         font-size: 0.875rem;
         font-weight: 600;
-        color: #374151;
+        color: hsl(215, 25%, 35%);
       }
       .mode-pills {
         display: inline-flex;
-        border: 1.5px solid #d1d5db;
+        border: 1.5px solid hsl(214, 32%, 91%);
         border-radius: 2rem;
         overflow: hidden;
-        background: #f3f4f6;
+        background: hsl(210, 40%, 96%);
       }
       .mode-pill {
         padding: 0.35rem 1.1rem;
@@ -475,19 +484,20 @@
         border: none;
         background: transparent;
         cursor: pointer;
-        color: #6b7280;
+        color: hsl(215, 16%, 47%);
         transition:
           background 0.15s,
           color 0.15s;
         border-radius: 2rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
       }
       .mode-pill.active {
-        background: #18181b;
+        background: hsl(222, 47%, 11%);
         color: #fff;
       }
       .mode-pill:not(.active):hover {
-        background: #e5e7eb;
-        color: #18181b;
+        background: hsl(214, 32%, 91%);
+        color: hsl(222, 47%, 11%);
       }
 
       /* Mode badge shown inside card header */
@@ -497,9 +507,9 @@
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        background: #f3f4f6;
-        color: #6b7280;
-        border: 1px solid #e5e7eb;
+        background: hsl(210, 40%, 96%);
+        color: hsl(215, 16%, 47%);
+        border: 1px solid hsl(214, 32%, 91%);
         border-radius: 999px;
         padding: 0.15rem 0.55rem;
         margin-left: 0.5rem;
@@ -571,7 +581,7 @@
                 viewBox="0 0 24 24"
                 stroke-width="1.8"
                 stroke="currentColor"
-                style="color: #18181b"
+                style="color: hsl(222, 47%, 11%)"
               >
                 <path
                   stroke-linecap="round"
@@ -1144,7 +1154,7 @@
         <div class="card-header">
           <div class="result-header-row">
             <h3>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="color:#18181b">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="color:hsl(222,47%,11%)">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
                 Analysis Results
               </svg>
@@ -1154,7 +1164,7 @@
         </div>
         <div class="card-body">
           ${sectionsHtml}
-          <div style="padding-top:1rem; border-top:1px solid #e5e7eb; margin-top:.5rem">
+          <div style="padding-top:1rem; border-top:1px solid hsl(214,32%,91%); margin-top:.5rem">
             <button class="btn btn-primary btn-full" onclick="exportSelected()">Export Selected Outcomes</button>
           </div>
         </div>
@@ -1170,7 +1180,7 @@
       ) {
         document.getElementById("results-col").innerHTML = `
       <div class="loading-card">
-        <span class="spinner big-spinner" style="width:2.5rem;height:2.5rem;border-width:3px;color:#18181b;border-top-color:transparent"></span>
+        <span class="spinner big-spinner" style="width:2.5rem;height:2.5rem;border-width:3px;color:hsl(222,47%,11%);border-top-color:transparent"></span>
         <p>${escHtml(title)}</p>
         <small>${escHtml(subtitle)}</small>
       </div>
