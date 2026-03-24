@@ -18,8 +18,8 @@ export const FEATURE_FLAGS = {
   // AI System Profile
   system_usecase: false,
   operational_geography: false,
-  decision_outcomes: false,
-  risk_sensitivity: false
+  decision_outcomes: true,
+  risk_sensitivity: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
