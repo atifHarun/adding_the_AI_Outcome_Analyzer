@@ -1,0 +1,20 @@
+[
+  {
+    "tool": "test",
+    "rating": 5,
+    "timestamp": 1773750983383
+  },
+  {
+    "tool": "test",
+    "rating": 5,
+    "timestamp": 1773750993648
+  },
+  {
+    "user_id": "3e0400de-21b7-447c-859d-e838d3b56ffc",
+    "tool": "model_fairness",
+    "rating": 2,
+    "comment": "",
+    "scan_id": "1773743979024",
+    "timestamp": 1773751079260
+  }
+]
