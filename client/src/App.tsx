@@ -14,6 +14,7 @@ import Tool from "./pages/Tool";
 import DatasetTool from "./pages/DatasetTool";
 import Results from "./pages/Results";
 import Copilot from "./pages/Copilot";
+import AiAnalyzer from "./pages/AiAnalyzer";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/dataset-tool" component={DatasetTool} />
         <Route path="/results" component={Results} />
         <Route path="/copilot" component={Copilot} />
+        <Route path="/ai-analyzer" component={AiAnalyzer} />
         <Route component={NotFound} />
       </Switch>
     </div>

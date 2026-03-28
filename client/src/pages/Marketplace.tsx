@@ -48,7 +48,6 @@ const tools = [
     category: "AI System Profile",
     route: "/ai-analyzer",
     featureFlag: "decision_outcomes" as const,
-    serverRoute: true,
   },
   {
     id: "risk-sensitivity",
@@ -208,21 +207,12 @@ export default function Marketplace() {
                             {tool.description}
                           </CardDescription>
                           {isEnabled ? (
-                            (tool as any).serverRoute ? (
-                              <a href={tool.route}>
-                                <Button className="w-full gap-2">
-                                  Run Tool
-                                  <ChevronRight className="w-4 h-4" />
-                                </Button>
-                              </a>
-                            ) : (
-                              <Link href={tool.route}>
-                                <Button className="w-full gap-2">
-                                  Run Tool
-                                  <ChevronRight className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                            )
+                            <Link href={tool.route}>
+                              <Button className="w-full gap-2">
+                                Run Tool
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </Link>
                           ) : (
                             <Button className="w-full gap-2" variant="outline" disabled>
                               <Lock className="w-4 h-4" />

@@ -221,11 +221,6 @@ export async function registerRoutes(
     }
   });
 
-  // ── AI Outcome Analyzer: serve HTML ─────────────────────────────────────
-  app.get("/ai-analyzer", (_req, res) => {
-    res.sendFile(path.join(__dirname, "..", "public", "ai-analyzer.html"));
-  });
-
   // ── AI Outcome Analyzer: generate JSON from description ─────────────────
   app.post("/api/ai-analyzer/generate-json", async (req, res) => {
     try {
