@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "oR8S9i5qX_SOHPIL1Na3k"
+uri = "file://ai-analyzer-patch.zip"
+type = "unspecified"
+title = "AI Outcome Analyzer — Patch Package"
