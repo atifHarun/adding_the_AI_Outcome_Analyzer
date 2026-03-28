@@ -223,7 +223,7 @@ export async function registerRoutes(
 
   // ── AI Outcome Analyzer: serve HTML ─────────────────────────────────────
   app.get("/ai-analyzer", (_req, res) => {
-    res.sendFile(path.join(__dirname, "..", "ai-analyzer", "static", "ai-analyzer.html"));
+    res.sendFile(path.join(__dirname, "..", "public", "ai-analyzer.html"));
   });
 
   // ── AI Outcome Analyzer: generate JSON from description ─────────────────
