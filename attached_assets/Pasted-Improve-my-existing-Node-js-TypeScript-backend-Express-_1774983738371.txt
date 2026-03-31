@@ -1,0 +1,88 @@
+Improve my existing Node.js + TypeScript backend (Express) to meet production-level standards.
+
+IMPORTANT:
+- Do NOT break existing functionality
+- Keep all endpoints working
+- Apply changes cleanly and modularly
+
+----------------------------------
+PART 1: VALIDATIONS & SECURITY
+----------------------------------
+
+1. CHECK OPENAI API KEY (SYSTEM LEVEL)
+- Before handling any request:
+  - Validate process.env.OPENAI_API_KEY exists
+  - If missing, return:
+    status 500 with message:
+    "Server configuration error: API key is missing"
+
+2. INPUT VALIDATION (GIBBERISH DETECTION)
+- Add validation for user input (AI description):
+  - Reject very short or meaningless text (e.g. "abv", "123", random chars)
+  - Basic rules:
+    - Minimum length (e.g. > 10 characters)
+    - Must contain at least a few real words (letters, spaces)
+  - If invalid:
+    return 400 with message:
+    "Please enter a meaningful description of the AI system"
+
+----------------------------------
+PART 2: TYPE SAFETY
+----------------------------------
+
+3. ADD TYPE SAFETY FOR API RESPONSES
+- Define TypeScript interfaces for:
+  - Generate JSON response
+  - Analyze response
+- Ensure OpenAI responses are typed before returning
+- Avoid using 'any'
+
+----------------------------------
+PART 3: RATE LIMITING
+----------------------------------
+
+4. IMPLEMENT RATE LIMITING
+- Use express-rate-limit
+- Apply globally or per route
+- Example:
+  - Limit: 10–20 requests per minute per IP
+- Return proper message:
+  "Too many requests. Please try again later."
+
+----------------------------------
+PART 4: ERROR HANDLING
+----------------------------------
+
+5. IMPROVE ERROR HANDLING
+- Wrap all OpenAI calls in try/catch
+- Do NOT expose raw errors
+
+Handle cases:
+
+A. Billing / quota errors:
+Return:
+"Service temporarily unavailable due to billing limits. Please try again later."
+
+B. Network/API errors:
+Return:
+"Unable to process request at the moment. Please try again."
+
+C. Generic fallback:
+"An unexpected error occurred."
+
+----------------------------------
+PART 5: DOTENV CONFIRMATION
+----------------------------------
+
+6. Ensure dotenv is properly initialized at app start:
+- import dotenv and call config()
+
+
+----------------------------------
+IMPORTANT:
+----------------------------------
+
+- Do NOT remove any features
+- Keep API endpoints unchanged
+- Keep frontend compatibility
+- Focus on clean, maintainable architecture

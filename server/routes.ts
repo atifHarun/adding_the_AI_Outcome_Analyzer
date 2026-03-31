@@ -1,33 +1,79 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { api } from "@shared/routes";
-import path from "path";
-import { fileURLToPath } from "url";
 import { OpenAI } from "openai";
+import rateLimit from "express-rate-limit";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ── TypeScript interfaces ─────────────────────────────────────────────────────
+
+interface AiUseCaseJson {
+  useCaseName: string;
+  systemType: string;
+  primaryFunction?: string;
+  contextOfUse: {
+    industry: string;
+    environment: string;
+  };
+  stakeholders?: {
+    primaryUsers: string[];
+    indirectlyAffectedParties: string[];
+    oversightOwners: string[];
+  };
+  decisionsAndActions?: {
+    decisionsMadeBySystem: string[];
+    actionsExecutedAutomatically: string[];
+    actionsRequiringHumanApproval: string[];
+  };
+  dataInputs?: {
+    dataTypesUsed: string[];
+    dataSources: string[];
+    personalOrSensitiveData: boolean;
+  };
+  modelAutonomyLevel: string;
+  scaleAndReach?: {
+    expectedNumberOfUsers: string;
+    frequencyOfUse: string;
+    geographicScope: string;
+  };
+}
+
+interface GenerateJsonApiResponse {
+  json: AiUseCaseJson;
+}
+
+interface AnalyzeApiResponse {
+  analysis: string;
+}
+
+// ── OpenAI client (lazy initialisation) ──────────────────────────────────────
 
 let openai: OpenAI | null = null;
+
 function getOpenAI(): OpenAI {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY environment variable is not set.");
-    }
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
   }
   return openai;
 }
 
-const AI_ANALYZER_REQUIRED_FIELDS = ["useCaseName", "systemType", "contextOfUse", "modelAutonomyLevel"];
+// ── Validation constants ──────────────────────────────────────────────────────
+
+const AI_ANALYZER_REQUIRED_FIELDS = [
+  "useCaseName",
+  "systemType",
+  "contextOfUse",
+  "modelAutonomyLevel",
+];
+
 const AI_ANALYZER_SYSTEM_TYPES = [
   "Text-based conversational AI",
   "Voice-based conversational AI",
   "Decision support AI",
   "Agent assist AI",
 ];
+
 const AI_ANALYZER_AUTONOMY_LEVELS = [
   "Informational only",
   "Recommendation with human decision",
@@ -35,48 +81,117 @@ const AI_ANALYZER_AUTONOMY_LEVELS = [
   "Fully autonomous action",
 ];
 
-function validateGeneratedJson(data: any): boolean {
+function validateGeneratedJson(data: unknown): data is AiUseCaseJson {
   if (!data || typeof data !== "object") return false;
+  const obj = data as Record<string, unknown>;
   for (const field of AI_ANALYZER_REQUIRED_FIELDS) {
-    if (!(field in data)) return false;
+    if (!(field in obj)) return false;
   }
-  if (!AI_ANALYZER_SYSTEM_TYPES.includes(data.systemType)) return false;
-  if (!AI_ANALYZER_AUTONOMY_LEVELS.includes(data.modelAutonomyLevel)) return false;
+  if (!AI_ANALYZER_SYSTEM_TYPES.includes(obj.systemType as string)) return false;
+  if (!AI_ANALYZER_AUTONOMY_LEVELS.includes(obj.modelAutonomyLevel as string)) return false;
   return true;
 }
 
-// Setup multer for in-memory file uploads
+// ── Input sanity check (gibberish detection) ──────────────────────────────────
+
+function isValidDescription(text: string): boolean {
+  if (text.trim().length < 10) return false;
+  const meaningfulWords = text.trim().split(/\s+/).filter((w) => /[a-zA-Z]{2,}/.test(w));
+  return meaningfulWords.length >= 3;
+}
+
+// ── Middleware: require OPENAI_API_KEY at system level ────────────────────────
+
+function requireOpenAiKey(_req: Request, res: Response, next: NextFunction): void {
+  if (!process.env.OPENAI_API_KEY) {
+    res.status(500).json({ message: "Server configuration error: API key is missing" });
+    return;
+  }
+  next();
+}
+
+// ── Rate limiter for AI analyzer endpoints ────────────────────────────────────
+
+const aiAnalyzerLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please try again later." },
+});
+
+// ── OpenAI error classifier ───────────────────────────────────────────────────
+
+function classifyOpenAiError(err: unknown): { status: number; message: string } {
+  if (err instanceof OpenAI.APIError) {
+    const msg = err.message?.toLowerCase() ?? "";
+    if (err.status === 429) {
+      if (msg.includes("quota") || msg.includes("billing") || msg.includes("insufficient")) {
+        return {
+          status: 503,
+          message: "Service temporarily unavailable due to billing limits. Please try again later.",
+        };
+      }
+      return { status: 429, message: "Too many requests. Please try again later." };
+    }
+    if (err.status && err.status >= 500) {
+      return {
+        status: 502,
+        message: "Unable to process request at the moment. Please try again.",
+      };
+    }
+  }
+  if (err instanceof Error) {
+    const msg = err.message?.toLowerCase() ?? "";
+    if (
+      msg.includes("econnrefused") ||
+      msg.includes("network") ||
+      msg.includes("timeout") ||
+      msg.includes("fetch failed")
+    ) {
+      return {
+        status: 502,
+        message: "Unable to process request at the moment. Please try again.",
+      };
+    }
+  }
+  return { status: 500, message: "An unexpected error occurred." };
+}
+
+// ── Multer for in-memory file uploads ─────────────────────────────────────────
+
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper to parse CSV buffer
-function parseCsv(buffer: Buffer): any[] {
+function parseCsv(buffer: Buffer): Record<string, unknown>[] {
   return parse(buffer, {
     columns: true,
     skip_empty_lines: true,
-    cast: true, // Casts numbers/booleans
+    cast: true,
   });
 }
+
+// ── Route registration ────────────────────────────────────────────────────────
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
   // Endpoint 1: Detect all columns
   app.post(api.detectSensitive.path, upload.single("file"), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-
       const records = parseCsv(req.file.buffer);
       if (records.length === 0) {
         return res.status(400).json({ message: "CSV file is empty" });
       }
-
       const columns = Object.keys(records[0]);
       res.status(200).json({ all_columns: columns });
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || "Failed to process file" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to process file";
+      res.status(400).json({ message });
     }
   });
 
@@ -87,8 +202,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const confirmedStr = req.body.confirmed_sensitive_columns;
-      const mappingStr = req.body.column_mapping;
+      const confirmedStr = req.body.confirmed_sensitive_columns as string | undefined;
+      const mappingStr = req.body.column_mapping as string | undefined;
 
       if (!confirmedStr) {
         return res.status(400).json({ message: "No confirmed_sensitive_columns provided" });
@@ -114,15 +229,17 @@ export async function registerRoutes(
         return res.status(400).json({ message: "CSV file is empty" });
       }
 
-      // Validate mapping exists in columns
       const cols = Object.keys(records[0] || {});
       const required = [mapping.score, mapping.approved, mapping.actual_default];
-      const missing = required.filter(c => !cols.includes(c));
+      const missing = required.filter((c) => !cols.includes(c));
       if (missing.length > 0) {
         return res.status(400).json({ message: `Missing mapped columns: ${missing.join(", ")}` });
       }
 
-      const result: any = {
+      const result: {
+        dataset_summary: { rows: number; sensitive_columns_analyzed: string[] };
+        fairness_results: Record<string, unknown>;
+      } = {
         dataset_summary: {
           rows: records.length,
           sensitive_columns_analyzed: confirmedColumns,
@@ -131,7 +248,7 @@ export async function registerRoutes(
       };
 
       for (const col of confirmedColumns) {
-        const subgroups: Record<string, any[]> = {};
+        const subgroups: Record<string, Record<string, unknown>[]> = {};
         for (const row of records) {
           const val = String(row[col] || "").trim();
           if (!val) continue;
@@ -139,7 +256,15 @@ export async function registerRoutes(
           subgroups[val].push(row);
         }
 
-        const subgroupMetrics: Record<string, any> = {};
+        const subgroupMetrics: Record<string, {
+          selection_rate: number;
+          tpr: number;
+          fpr: number;
+          precision: number;
+          mean_score: number;
+          count: number;
+        }> = {};
+
         for (const [groupName, groupRecords] of Object.entries(subgroups)) {
           let approvedCount = 0;
           let truePositives = 0;
@@ -152,7 +277,6 @@ export async function registerRoutes(
             const approved = Boolean(Number(row[mapping.approved]));
             const actualDefault = Boolean(Number(row[mapping.actual_default]));
             const score = Number(row[mapping.score]);
-            
             if (approved) approvedCount++;
             if (!actualDefault) {
               actualGoodCount++;
@@ -170,7 +294,7 @@ export async function registerRoutes(
             fpr: actualBadCount > 0 ? falsePositives / actualBadCount : 0,
             precision: approvedCount > 0 ? truePositives / approvedCount : 0,
             mean_score: groupRecords.length > 0 ? totalScore / groupRecords.length : 0,
-            count: groupRecords.length
+            count: groupRecords.length,
           };
         }
 
@@ -192,7 +316,7 @@ export async function registerRoutes(
         let maxScoreDiff = 0;
         const names = Object.keys(subgroupMetrics);
 
-        for (const [name, m] of Object.entries(subgroupMetrics)) {
+        for (const [, m] of Object.entries(subgroupMetrics)) {
           const air = maxSelectionRate > 0 ? m.selection_rate / maxSelectionRate : 1;
           worstAir = Math.min(worstAir, air);
           maxTprDisp = Math.max(maxTprDisp, maxTpr - m.tpr);
@@ -212,24 +336,44 @@ export async function registerRoutes(
             predictive_parity_diff: maxPrecDiff,
             score_distribution_diff: maxScoreDiff,
           },
-          risk_flag: (worstAir < 0.7 || maxTprDisp > 0.1 || maxFprDisp > 0.1) ? "HIGH" : (worstAir < 0.8 ? "MEDIUM" : "LOW")
+          risk_flag:
+            worstAir < 0.7 || maxTprDisp > 0.1 || maxFprDisp > 0.1
+              ? "HIGH"
+              : worstAir < 0.8
+              ? "MEDIUM"
+              : "LOW",
         };
+
+        void threshold;
       }
+
       res.status(200).json(result);
-    } catch (err: any) {
-      res.status(400).json({ message: err.message || "Analysis failed" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Analysis failed";
+      res.status(400).json({ message });
     }
   });
 
-  // ── AI Outcome Analyzer: generate JSON from description ─────────────────
-  app.post("/api/ai-analyzer/generate-json", async (req, res) => {
-    try {
-      const { description } = req.body;
-      if (!description || typeof description !== "string" || !description.trim()) {
-        return res.status(400).json({ message: "Description is required and cannot be empty." });
-      }
+  // ── AI Outcome Analyzer: generate JSON from description ───────────────────
+  app.post(
+    "/api/ai-analyzer/generate-json",
+    requireOpenAiKey,
+    aiAnalyzerLimiter,
+    async (req: Request, res: Response) => {
+      try {
+        const { description } = req.body as { description?: unknown };
 
-      const prompt = `You are an expert in AI system design and schema validation. Convert the following free-text description of an AI system into a structured JSON object that strictly follows this schema:
+        if (!description || typeof description !== "string" || !description.trim()) {
+          return res.status(400).json({ message: "Description is required and cannot be empty." });
+        }
+
+        if (!isValidDescription(description)) {
+          return res.status(400).json({
+            message: "Please enter a meaningful description of the AI system",
+          });
+        }
+
+        const prompt = `You are an expert in AI system design and schema validation. Convert the following free-text description of an AI system into a structured JSON object that strictly follows this schema:
 
 {
   "useCaseName": "string - The name of the specific AI implementation",
@@ -274,94 +418,115 @@ ${description}
 
 Return ONLY the JSON object, nothing else.`;
 
-      const response = await getOpenAI().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a JSON generation assistant. Return only valid JSON with no explanations or markdown." },
-          { role: "user", content: prompt },
-        ],
-      });
+        const response = await getOpenAI().chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a JSON generation assistant. Return only valid JSON with no explanations or markdown.",
+            },
+            { role: "user", content: prompt },
+          ],
+        });
 
-      const content = response.choices[0].message.content || "";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : content;
+        const content = response.choices[0]?.message?.content ?? "";
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : content;
 
-      let generatedJson: any;
-      try {
-        generatedJson = JSON.parse(jsonString);
-      } catch {
-        return res.status(500).json({ message: "Unable to generate valid JSON. Please try again." });
-      }
-
-      if (!validateGeneratedJson(generatedJson)) {
-        return res.status(500).json({ message: "Unable to generate valid JSON. Please try again." });
-      }
-
-      return res.status(200).json({ json: generatedJson });
-    } catch (err: any) {
-      console.error("[ai-analyzer/generate-json] Error:", err.message);
-      return res.status(500).json({ message: "Failed to generate JSON from description." });
-    }
-  });
-
-  // ── AI Outcome Analyzer: analyze outcomes ────────────────────────────────
-  app.post("/api/ai-analyzer/analyze", async (req, res) => {
-    try {
-      const input = req.body;
-      for (const field of AI_ANALYZER_REQUIRED_FIELDS) {
-        if (!input[field]) {
-          return res.status(400).json({ message: `Missing required field: ${field}` });
+        let generatedJson: unknown;
+        try {
+          generatedJson = JSON.parse(jsonString);
+        } catch {
+          return res.status(500).json({ message: "An unexpected error occurred." });
         }
+
+        if (!validateGeneratedJson(generatedJson)) {
+          return res.status(500).json({ message: "An unexpected error occurred." });
+        }
+
+        const body: GenerateJsonApiResponse = { json: generatedJson };
+        return res.status(200).json(body);
+      } catch (err: unknown) {
+        const { status, message } = classifyOpenAiError(err);
+        console.error("[ai-analyzer/generate-json]", err instanceof Error ? err.message : err);
+        return res.status(status).json({ message });
       }
+    }
+  );
 
-      const { modelAutonomyLevel, scaleAndReach, dataInputs } = input;
-      const personalData = dataInputs?.personalOrSensitiveData ? "Yes" : "No";
+  // ── AI Outcome Analyzer: analyze outcomes ─────────────────────────────────
+  app.post(
+    "/api/ai-analyzer/analyze",
+    requireOpenAiKey,
+    aiAnalyzerLimiter,
+    async (req: Request, res: Response) => {
+      try {
+        const input = req.body as Record<string, unknown>;
 
-      const prompt = `
-      Perform a structured ethical and impact analysis for the following AI use case provided in JSON format:
-      ${JSON.stringify(input, null, 2)}
+        for (const field of AI_ANALYZER_REQUIRED_FIELDS) {
+          if (!input[field]) {
+            return res.status(400).json({ message: `Missing required field: ${field}` });
+          }
+        }
 
-      What are the other potential outcomes of this AI solution?
+        const modelAutonomyLevel = input.modelAutonomyLevel as string;
+        const scaleAndReach = input.scaleAndReach;
+        const dataInputs = input.dataInputs as { personalOrSensitiveData?: boolean } | undefined;
+        const personalData = dataInputs?.personalOrSensitiveData ? "Yes" : "No";
 
-      Analyze the following specifically:
-      - modelAutonomyLevel: ${modelAutonomyLevel}
-      - scaleAndReach: ${scaleAndReach || "Not specified"}
-      - personalOrSensitiveData: ${personalData}
+        const prompt = `
+Perform a structured ethical and impact analysis for the following AI use case provided in JSON format:
+${JSON.stringify(input, null, 2)}
 
-      Categorize the output into exactly these 8 sections using bullet points:
-      1. Positive outcomes
-      2. Negative outcomes
-      3. Ethical risks
-      4. Legal risks
-      5. Social impacts
-      6. Economic impacts
-      7. Long-term systemic risks
-      8. Recommended Human Oversight Actions
+What are the other potential outcomes of this AI solution?
 
-      Guidelines:
-      - Avoid promotional language.
-      - Explicitly analyze modelAutonomyLevel.
-      - Analyze scaleAndReach for amplified risks.
-      - Analyze dataInputs.personalOrSensitiveData carefully.
-      - Identify unintended consequences.
-      - Consider bias, privacy, fairness, transparency, accountability.
+Analyze the following specifically:
+- modelAutonomyLevel: ${modelAutonomyLevel}
+- scaleAndReach: ${JSON.stringify(scaleAndReach) || "Not specified"}
+- personalOrSensitiveData: ${personalData}
+
+Categorize the output into exactly these 8 sections using bullet points:
+1. Positive outcomes
+2. Negative outcomes
+3. Ethical risks
+4. Legal risks
+5. Social impacts
+6. Economic impacts
+7. Long-term systemic risks
+8. Recommended Human Oversight Actions
+
+Guidelines:
+- Avoid promotional language.
+- Explicitly analyze modelAutonomyLevel.
+- Analyze scaleAndReach for amplified risks.
+- Analyze dataInputs.personalOrSensitiveData carefully.
+- Identify unintended consequences.
+- Consider bias, privacy, fairness, transparency, accountability.
     `;
 
-      const response = await getOpenAI().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are an AI ethics and policy expert. Provide structured, critical analysis of AI use cases." },
-          { role: "user", content: prompt },
-        ],
-      });
+        const response = await getOpenAI().chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an AI ethics and policy expert. Provide structured, critical analysis of AI use cases.",
+            },
+            { role: "user", content: prompt },
+          ],
+        });
 
-      const analysis = response.choices[0].message.content || "No analysis generated.";
-      return res.status(200).json({ analysis });
-    } catch (err: any) {
-      console.error("[ai-analyzer/analyze] Error:", err.message);
-      return res.status(500).json({ message: "Failed to perform analysis." });
+        const analysis = response.choices[0]?.message?.content ?? "No analysis generated.";
+        const body: AnalyzeApiResponse = { analysis };
+        return res.status(200).json(body);
+      } catch (err: unknown) {
+        const { status, message } = classifyOpenAiError(err);
+        console.error("[ai-analyzer/analyze]", err instanceof Error ? err.message : err);
+        return res.status(status).json({ message });
+      }
     }
-  });
+  );
 
   return httpServer;
 }
