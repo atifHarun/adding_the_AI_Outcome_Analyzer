@@ -94,10 +94,64 @@ function validateGeneratedJson(data: unknown): data is AiUseCaseJson {
 
 // ── Input sanity check (gibberish detection) ──────────────────────────────────
 
+const KNOWN_ENGLISH_WORDS = new Set([
+  // Articles & determiners
+  "a", "an", "the", "this", "these", "those", "some", "any", "each", "every", "both", "all",
+  // Conjunctions & prepositions
+  "and", "or", "but", "nor", "so", "for", "yet", "if", "as", "at", "by", "in", "of",
+  "on", "to", "up", "via", "with", "from", "into", "onto", "over", "than", "that",
+  "then", "when", "which", "while", "who", "whom", "whose", "about", "after", "before",
+  "between", "during", "through", "under", "within", "without", "across", "against",
+  // Pronouns
+  "it", "its", "they", "their", "our", "your", "my", "we", "you", "he", "she",
+  // Common verbs
+  "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+  "do", "does", "did", "will", "would", "could", "should", "may", "might", "can",
+  "use", "uses", "used", "using", "help", "helps", "make", "makes", "made",
+  "get", "gets", "give", "gives", "take", "takes", "based", "built", "build",
+  "provide", "provides", "process", "processes", "detect", "detects", "predict",
+  "analyze", "analyse", "support", "manage", "run", "runs", "allow", "allows",
+  "enable", "enables", "generate", "creates", "create", "handle", "handles",
+  "train", "trained", "learn", "designed", "used", "called", "called", "monitor",
+  // Common adjectives & adverbs
+  "new", "more", "also", "only", "other", "such", "not", "same", "how", "very",
+  "well", "real", "multiple", "various", "automated", "automatic", "intelligent",
+  // AI/tech domain words — any of these strongly signals a real description
+  "ai", "ml", "system", "model", "data", "user", "users", "tool", "platform",
+  "service", "app", "application", "software", "algorithm", "network", "api",
+  "input", "output", "result", "results", "report", "reports", "access", "query",
+  "database", "cloud", "server", "client", "agent", "bot", "chatbot", "assistant",
+  "decision", "decisions", "prediction", "classification", "recommendation",
+  "detection", "recognition", "analysis", "automation", "workflow", "pipeline",
+  "risk", "compliance", "audit", "governance", "fairness", "bias", "ethics",
+  "medical", "healthcare", "finance", "banking", "lending", "credit", "fraud",
+  "customer", "employee", "candidate", "patient", "product", "business", "company",
+  "document", "image", "text", "voice", "speech", "language", "content", "feedback",
+]);
+
 function isValidDescription(text: string): boolean {
-  if (text.trim().length < 10) return false;
-  const meaningfulWords = text.trim().split(/\s+/).filter((w) => /[a-zA-Z]{2,}/.test(w));
-  return meaningfulWords.length >= 3;
+  const trimmed = text.trim();
+
+  // Must be at least 15 characters
+  if (trimmed.length < 15) return false;
+
+  // Extract lowercase alphabetic words (2+ chars)
+  const words = trimmed.toLowerCase().split(/\s+/).filter((w) => /^[a-z]{2,}$/.test(w));
+
+  // Must have at least 4 words
+  if (words.length < 4) return false;
+
+  // At least 2 words must be recognised English / domain words
+  const knownCount = words.filter((w) => KNOWN_ENGLISH_WORDS.has(w)).length;
+  if (knownCount < 2) return false;
+
+  // Vowel-ratio sanity check on the whole input (catches "pjp oiohoh" style noise)
+  const letters = trimmed.toLowerCase().replace(/[^a-z]/g, "");
+  if (letters.length === 0) return false;
+  const vowelRatio = [...letters].filter((c) => "aeiou".includes(c)).length / letters.length;
+  if (vowelRatio < 0.2 || vowelRatio > 0.70) return false;
+
+  return true;
 }
 
 // ── Middleware: require OPENAI_API_KEY at system level ────────────────────────
